@@ -4,7 +4,6 @@
 
 import 'dart:convert';
 
-import 'package:cli_pkg/js.dart';
 import 'package:path/path.dart' as p;
 
 import 'ast/sass.dart';
@@ -14,7 +13,6 @@ import 'compile_result.dart';
 import 'deprecation.dart';
 import 'importer.dart';
 import 'importer/legacy_node.dart';
-import 'importer/no_op.dart';
 import 'io.dart';
 import 'logger.dart';
 import 'logger/deprecation_processing.dart';
@@ -126,7 +124,7 @@ Future<CompileResult> compileStringAsync(String source,
       logger,
       importCache,
       nodeImporter,
-      importer ?? (isBrowser ? NoOpImporter() : FilesystemImporter.cwd),
+      importer ?? FilesystemImporter.cwd,
       functions,
       style,
       useSpaces,

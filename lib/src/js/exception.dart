@@ -3,7 +3,6 @@
 // https://opensource.org/licenses/MIT.
 
 import 'package:js/js.dart';
-import 'package:node_interop/node_interop.dart';
 import 'package:term_glyph/term_glyph.dart' as glyph;
 
 import '../exception.dart';
@@ -13,7 +12,7 @@ import 'utils.dart';
 
 @JS()
 @anonymous
-class _NodeException extends JsError {
+class _NodeException extends Error {
   // Fake constructor to silence the no_generative_constructor_in_superclass
   // error.
   external factory _NodeException();
@@ -76,7 +75,6 @@ Never throwNodeException(SassException exception,
       exception.toString(color: color).replaceFirst('Error: ', '')
     ]) as _NodeException;
     trace = getTrace(exception) ?? trace;
-    if (trace != null) attachJsStack(jsException, trace);
     jsThrow(jsException);
   } finally {
     glyph.ascii = wasAscii;

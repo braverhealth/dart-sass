@@ -3,7 +3,6 @@
 // https://opensource.org/licenses/MIT.
 
 import 'package:js/js.dart';
-import 'package:node_interop/js.dart';
 
 import '../../value.dart';
 import '../immutable.dart';
@@ -35,7 +34,7 @@ final JSClass listClass = () {
   jsClass.defineMethod('get', (Value self, num indexFloat) {
     var index = indexFloat.floor();
     if (index < 0) index = self.asList.length + index;
-    if (index < 0 || index >= self.asList.length) return undefined;
+    if (index < 0 || index >= self.asList.length) return null;
     return self.asList[index];
   });
 

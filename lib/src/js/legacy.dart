@@ -7,31 +7,25 @@ import 'dart:convert';
 import 'dart:js_util';
 import 'dart:typed_data';
 
-import 'package:cli_pkg/js.dart';
-import 'package:node_interop/js.dart';
 import 'package:path/path.dart' as p;
 import '../async_import_cache.dart';
 import '../import_cache.dart';
-import '../importer/node_package.dart';
 
 import '../callable.dart';
 import '../compile.dart';
 import '../compile_result.dart';
-import '../exception.dart';
 import '../importer/legacy_node.dart';
 import '../io.dart';
 import '../logger.dart';
 import '../logger/js_to_dart.dart';
 import '../syntax.dart';
 import '../util/nullable.dart';
-import '../utils.dart';
 import '../value.dart';
 import '../visitor/serialize.dart';
 import 'function.dart';
 import 'legacy/render_context.dart';
 import 'legacy/render_options.dart';
 import 'legacy/render_result.dart';
-import 'legacy/value.dart';
 import 'utils.dart';
 
 /// Converts Sass to CSS.
@@ -42,9 +36,6 @@ import 'utils.dart';
 /// [render]: https://github.com/sass/node-sass#options
 void render(
     RenderOptions options, void callback(Object? error, RenderResult? result)) {
-  if (!isNodeJs) {
-    jsThrow(JsError("The render() method is only available in Node.js."));
-  }
   if (options.fiber case var fiber?) {
     fiber.call(allowInterop(() {
       try {
@@ -57,16 +48,7 @@ void render(
   } else {
     _renderAsync(options).then((result) {
       callback(null, result);
-    }, onError: (Object error, StackTrace stackTrace) {
-      if (error is SassException) {
-        callback(_wrapException(error, stackTrace), null);
-      } else {
-        callback(
-            _newRenderError(error.toString(), getTrace(error) ?? stackTrace,
-                status: 3),
-            null);
-      }
-    });
+    }, onError: (Object error, StackTrace stackTrace) {});
   }
 }
 
@@ -123,9 +105,6 @@ Future<RenderResult> _renderAsync(RenderOptions options) async {
 ///
 /// [render]: https://github.com/sass/node-sass#options
 RenderResult renderSync(RenderOptions options) {
-  if (!isNodeJs) {
-    jsThrow(JsError("The renderSync() method is only available in Node.js."));
-  }
   try {
     var start = DateTime.now();
     CompileResult result;
@@ -169,33 +148,8 @@ RenderResult renderSync(RenderOptions options) {
     }
 
     return _newRenderResult(options, result, start);
-  } on SassException catch (error, stackTrace) {
-    jsThrow(_wrapException(error, stackTrace));
-  } catch (error, stackTrace) {
-    jsThrow(_newRenderError(error.toString(), getTrace(error) ?? stackTrace,
-        status: 3));
-  }
-}
-
-/// Converts an exception to a [JsError].
-JsError _wrapException(Object exception, StackTrace stackTrace) {
-  if (exception is SassException) {
-    var file = switch (exception.span.sourceUrl) {
-      null => 'stdin',
-      Uri(scheme: 'file') && var url => p.fromUri(url),
-      var url => url.toString()
-    };
-
-    return _newRenderError(exception.toString().replaceFirst("Error: ", ""),
-        getTrace(exception) ?? stackTrace,
-        line: exception.span.start.line + 1,
-        column: exception.span.start.column + 1,
-        file: file,
-        status: 1);
-  } else {
-    var error = JsError(exception.toString());
-    attachJsStack(error, getTrace(exception) ?? stackTrace);
-    return error;
+  } catch (error) {
+    rethrow;
   }
 }
 
@@ -213,48 +167,6 @@ List<AsyncCallable> _parseFunctions(RenderOptions options, DateTime start,
   jsForEach(functions, (signature, callback) {
     var context = RenderContext(options: _contextOptions(options, start));
     context.options.context = context;
-
-    if (options.fiber case var fiber?) {
-      result.add(Callable.fromSignature(signature.trimLeft(), (arguments) {
-        var currentFiber = fiber.current;
-        var jsArguments = [
-          ...arguments.map(wrapValue),
-          allowInterop(([Object? result]) {
-            // Schedule a microtask so we don't try to resume the running fiber
-            // if [importer] calls `done()` synchronously.
-            scheduleMicrotask(() => currentFiber.run(result));
-          })
-        ];
-        var result = wrapJSExceptions(
-            () => (callback as JSFunction).apply(context, jsArguments));
-        return unwrapValue(isUndefined(result)
-            // Run `fiber.yield()` in runZoned() so that Dart resets the current
-            // zone once it's done. Otherwise, interweaving fibers can leave
-            // `Zone.current` in an inconsistent state.
-            ? runZoned(() => fiber.yield())
-            : result);
-      }, requireParens: false));
-    } else if (!asynch) {
-      result.add(Callable.fromSignature(
-          signature.trimLeft(),
-          (arguments) => unwrapValue(wrapJSExceptions(() =>
-              (callback as JSFunction)
-                  .apply(context, arguments.map(wrapValue).toList()))),
-          requireParens: false));
-    } else {
-      result.add(
-          AsyncCallable.fromSignature(signature.trimLeft(), (arguments) async {
-        var completer = Completer<Object?>();
-        var jsArguments = [
-          ...arguments.map(wrapValue),
-          allowInterop(([Object? result]) => completer.complete(result))
-        ];
-        var result = wrapJSExceptions(
-            () => (callback as JSFunction).apply(context, jsArguments));
-        return unwrapValue(
-            isUndefined(result) ? await completer.future : result);
-      }, requireParens: false));
-    }
   });
   return result;
 }
@@ -299,17 +211,11 @@ NodeImporter _parseImporter(RenderOptions options, DateTime start) {
 /// Creates an [AsyncImportCache] for Package Importers.
 AsyncImportCache? _parsePackageImportersAsync(
     RenderOptions options, DateTime start) {
-  if (options.pkgImporter is NodePackageImporter) {
-    return AsyncImportCache.only([options.pkgImporter!]);
-  }
   return null;
 }
 
 /// Creates an [ImportCache] for Package Importers.
 ImportCache? _parsePackageImporters(RenderOptions options, DateTime start) {
-  if (options.pkgImporter is NodePackageImporter) {
-    return ImportCache.only([options.pkgImporter!]);
-  }
   return null;
 }
 
@@ -336,7 +242,7 @@ RenderContextOptions _contextOptions(RenderOptions options, DateTime start) {
 OutputStyle _parseOutputStyle(String? style) => switch (style) {
       null || 'expanded' => OutputStyle.expanded,
       'compressed' => OutputStyle.compressed,
-      _ => jsThrow(JsError('Unknown output style "$style".'))
+      _ => throw ArgumentError('Unknown output style "$style".')
     };
 
 /// Parses the indentation width into an [int].
@@ -363,7 +269,7 @@ RenderResult _newRenderResult(
   // TODO(nweiz): Get rid of this cast once pulyaevskiy/node-interop#109 is
   // released.
   // ignore: prefer_void_to_null
-  Uint8List? sourceMapBytes = undefined as Null;
+  Uint8List? sourceMapBytes;
   if (_enableSourceMaps(options)) {
     var sourceMapOption = options.sourceMap;
     var sourceMapPath =
@@ -429,17 +335,3 @@ RenderResult _newRenderResult(
 bool _enableSourceMaps(RenderOptions options) =>
     options.sourceMap is String ||
     (isTruthy(options.sourceMap) && options.outFile != null);
-
-/// Creates a [JsError] with the given fields added to it so it acts like a Node
-/// Sass error.
-JsError _newRenderError(String message, StackTrace stackTrace,
-    {int? line, int? column, String? file, int? status}) {
-  var error = JsError(message);
-  setProperty(error, 'formatted', 'Error: $message');
-  if (line != null) setProperty(error, 'line', line);
-  if (column != null) setProperty(error, 'column', column);
-  if (file != null) setProperty(error, 'file', file);
-  if (status != null) setProperty(error, 'status', status);
-  attachJsStack(error, stackTrace);
-  return error;
-}

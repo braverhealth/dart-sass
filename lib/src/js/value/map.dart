@@ -2,8 +2,6 @@
 // MIT-style license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-import 'package:node_interop/js.dart';
-
 import '../../util/map.dart';
 import '../../value.dart';
 import '../immutable.dart';
@@ -24,12 +22,12 @@ final JSClass mapClass = () {
     if (indexOrKey is num) {
       var index = indexOrKey.floor();
       if (index < 0) index = self.lengthAsList + index;
-      if (index < 0 || index >= self.lengthAsList) return undefined;
+      if (index < 0 || index >= self.lengthAsList) return null;
 
       var (key, value) = self.contents.pairs.elementAt(index);
       return SassList([key, value], ListSeparator.space);
     } else {
-      return self.contents[indexOrKey] ?? undefined;
+      return self.contents[indexOrKey] ?? null;
     }
   });
 

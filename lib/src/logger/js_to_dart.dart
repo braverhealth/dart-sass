@@ -2,7 +2,6 @@
 // MIT-style license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-import 'package:node_interop/js.dart';
 import 'package:source_span/source_span.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:term_glyph/term_glyph.dart' as glyph;
@@ -35,7 +34,7 @@ final class JSToDartLogger extends LoggerWithDeprecationType {
       warn(
           message,
           WarnOptions(
-              span: span ?? (undefined as SourceSpan?),
+              span: span,
               stack: trace.toString(),
               deprecation: deprecation != null,
               deprecationType: deprecations[deprecation?.id]));

@@ -3,9 +3,7 @@
 // https://opensource.org/licenses/MIT.
 
 import 'package:collection/collection.dart';
-import 'package:node_interop/js.dart';
 import 'package:sass/src/js/immutable.dart';
-import 'package:sass/src/js/utils.dart';
 
 import '../../value.dart';
 import '../reflection.dart';
@@ -18,9 +16,7 @@ void _assertCalculationValue(Object arg) => switch (arg) {
       CalculationOperation() ||
       CalculationInterpolation() =>
         null,
-      _ => jsThrow(JsError(
-          'Argument `$arg` must be one of SassNumber, unquoted SassString, '
-          'SassCalculation, CalculationOperation, CalculationInterpolation')),
+      _ => null,
     };
 
 /// Check that [arg] is an unquoted string or interpolation.
@@ -32,9 +28,7 @@ bool _isValidClampArg(Object? arg) => switch (arg) {
 /// The JavaScript `SassCalculation` class.
 final JSClass calculationClass = () {
   var jsClass =
-      createJSClass('sass.SassCalculation', (Object self, [Object? _]) {
-    jsThrow(JsError("new sass.SassCalculation() isn't allowed"));
-  });
+      createJSClass('sass.SassCalculation', (Object self, [Object? _]) {});
 
   jsClass.defineStaticMethods({
     'calc': (Object argument) {
@@ -53,14 +47,7 @@ final JSClass calculationClass = () {
     },
     'clamp': (Object min, [Object? value, Object? max]) {
       if ((value == null && !_isValidClampArg(min)) ||
-          (max == null && ![min, value].any(_isValidClampArg))) {
-        jsThrow(JsError('Expected at least one SassString or '
-            'CalculationInterpolation in `${[
-          min,
-          value,
-          max
-        ].whereNotNull()}`'));
-      }
+          (max == null && ![min, value].any(_isValidClampArg))) {}
       [min, value, max].whereNotNull().forEach(_assertCalculationValue);
       return SassCalculation.unsimplified(
           'clamp', [min, value, max].whereNotNull());
@@ -88,7 +75,7 @@ final JSClass calculationOperationClass = () {
     var operator = CalculationOperator.values
         .firstWhereOrNull((value) => value.operator == strOperator);
     if (operator == null) {
-      jsThrow(JsError('Invalid operator: $strOperator'));
+      throw ArgumentError('Unknown operator: $strOperator');
     }
     _assertCalculationValue(left);
     _assertCalculationValue(right);

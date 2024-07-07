@@ -4,8 +4,8 @@
 
 import 'dart:js_util';
 import 'dart:typed_data';
+import 'dart:js_interop' hide JS;
 
-import 'package:node_interop/node.dart' hide module;
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
 
@@ -14,7 +14,6 @@ import '../utils.dart';
 import '../value.dart';
 import 'array.dart';
 import 'function.dart';
-import 'module.dart';
 import 'reflection.dart';
 import 'url.dart';
 
@@ -28,14 +27,14 @@ bool isUndefined(Object? value) => _isUndefined.call(value) as bool;
 
 final _isUndefined = JSFunction("value", "return value === undefined;");
 
-@JS("Error")
+@JS()
 external JSClass get jsErrorClass;
 
 /// Returns whether [value] is a JS Error object.
 bool isJSError(Object value) => instanceof(value, jsErrorClass);
 
 /// Attaches [trace] to [error] as its stack trace.
-void attachJsStack(JsError error, StackTrace trace) {
+void attachJsStack(JSAny error, StackTrace trace) {
   // Stack traces in v8 contain the error message itself as well as the stack
   // information, so we trim that out if it exists so we don't double-print it.
   var traceString = trace.toString();
@@ -44,8 +43,6 @@ void attachJsStack(JsError error, StackTrace trace) {
     // +1 to account for the newline before the first line.
     traceString = traceString.substring(firstRealLine + 1);
   }
-
-  setProperty(error, 'stack', "Error: ${error.message}\n$traceString");
 }
 
 /// Invokes [function] with [thisArg] as `this`.
@@ -167,14 +164,7 @@ bool isPromise(Object? object) =>
 
 /// Like [futureToPromise] from `node_interop`, but stores the stack trace for
 /// errors using [throwWithTrace].
-Promise futureToPromise(Future<Object?> future) => Promise(allowInterop(
-        (void Function(Object?) resolve, void Function(Object?) reject) {
-      future.then((result) => resolve(result),
-          onError: (Object error, StackTrace stackTrace) {
-        attachTrace(error, stackTrace);
-        reject(error);
-      });
-    }));
+JSPromise futureToPromise(Future<Object?> future) => future.toJS;
 
 @JS('URL')
 external JSClass get _urlClass;
@@ -224,7 +214,7 @@ ListSeparator jsToDartSeparator(String? separator) => switch (separator) {
       ',' => ListSeparator.comma,
       '/' => ListSeparator.slash,
       null => ListSeparator.undecided,
-      _ => jsThrow(JsError('Unknown separator "$separator".'))
+      _ => throw ArgumentError('Unknown separator: $separator.')
     };
 
 /// Converts a syntax string to an instance of [Syntax].
@@ -232,15 +222,13 @@ Syntax parseSyntax(String? syntax) => switch (syntax) {
       null || 'scss' => Syntax.scss,
       'indented' => Syntax.sass,
       'css' => Syntax.css,
-      _ => jsThrow(JsError('Unknown syntax "$syntax".'))
+      _ => throw ArgumentError('Unknown syntax: $syntax.')
     };
 
 /// The path to the Node.js entrypoint, if one can be located.
 String? get entrypointFilename {
   if (_requireMain?.filename case var filename?) {
     return filename;
-  } else if (process.argv case [_, String path, ...]) {
-    return module.createRequire(path).resolve(path);
   } else {
     return null;
   }

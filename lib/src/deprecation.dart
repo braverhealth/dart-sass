@@ -2,7 +2,6 @@
 // MIT-style license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-import 'package:cli_pkg/js.dart';
 import 'package:collection/collection.dart';
 import 'package:pub_semver/pub_semver.dart';
 
@@ -72,7 +71,7 @@ enum Deprecation {
   /// Deprecation for passing null as alpha in the ${isJS ? 'JS': 'Dart'} API.
   nullAlpha('null-alpha',
       deprecatedIn: '1.62.3',
-      description: 'Passing null as alpha in the ${isJS ? 'JS' : 'Dart'} API.'),
+      description: 'Passing null as alpha in the Dart API.'),
 
   /// Deprecation for passing percentages to the Sass abs() function.
   absPercent('abs-percent',

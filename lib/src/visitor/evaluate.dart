@@ -15,7 +15,6 @@ export 'async_evaluate.dart' show EvaluateResult;
 import 'dart:collection';
 import 'dart:math' as math;
 
-import 'package:cli_pkg/js.dart';
 import 'package:charcode/charcode.dart';
 import 'package:collection/collection.dart';
 import 'package:path/path.dart' as p;
@@ -1712,13 +1711,7 @@ final class _EvaluateVisitor
         }
       }
 
-      if (url.startsWith('package:') && isJS) {
-        // Special-case this error message, since it's tripped people up in the
-        // past.
-        throw "\"package:\" URLs aren't supported on this platform.";
-      } else {
-        throw "Can't find stylesheet to import.";
-      }
+      throw "Can't find stylesheet to import.";
     } on SassException {
       rethrow;
     } on ArgumentError catch (error, stackTrace) {

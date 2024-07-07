@@ -2,12 +2,9 @@
 // MIT-style license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-import 'package:node_interop/js.dart';
-
 import '../../callable.dart';
 import '../../value.dart';
 import '../reflection.dart';
-import '../utils.dart';
 
 /// The JavaScript `SassFunction` class.
 final JSClass functionClass = () {
@@ -15,8 +12,7 @@ final JSClass functionClass = () {
       (Object self, String signature, Value Function(List<Value>) callback) {
     var paren = signature.indexOf('(');
     if (paren == -1 || !signature.endsWith(')')) {
-      jsThrow(JsError(
-          'Invalid signature for new sass.SassFunction(): "$signature"'));
+      throw ArgumentError('Invalid function signature: $signature.');
     }
 
     return SassFunction(Callable(signature.substring(0, paren),

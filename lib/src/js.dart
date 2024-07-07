@@ -55,7 +55,7 @@ void main() {
       silent: JSLogger(
           warn: allowInteropNamed('sass.Logger.silent.warn', (_, __) {}),
           debug: allowInteropNamed('sass.Logger.silent.debug', (_, __) {})));
-  exports.NodePackageImporter = nodePackageImporterClass;
+  ;
   exports.deprecations = jsify(deprecations);
   exports.Version = versionClass;
 

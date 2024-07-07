@@ -4,7 +4,6 @@
 
 import 'dart:math' as math;
 
-import 'package:cli_pkg/js.dart';
 import 'package:meta/meta.dart';
 import 'package:source_span/source_span.dart';
 
@@ -190,9 +189,9 @@ class SassColor extends Value {
     if (alpha != null) return alpha;
 
     warnForDeprecation(
-        'Passing null for alpha in the ${isJS ? 'JS' : 'Dart'} API is '
+        'Passing null for alpha in the Dart API is '
         'deprecated.\n'
-        'To preserve current behavior, pass 1${isJS ? ' or undefined' : ''} '
+        'To preserve current behavior, pass 1'
         'instead.'
         '\n'
         'More info: https://sass-lang.com/d/null-alpha',

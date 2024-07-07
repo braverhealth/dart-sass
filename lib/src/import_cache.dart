@@ -9,7 +9,6 @@
 //
 // ignore_for_file: unused_import
 
-import 'package:cli_pkg/js.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:package_config/package_config_types.dart';
@@ -116,7 +115,6 @@ final class ImportCache {
   static List<Importer> _toImporters(Iterable<Importer>? importers,
       Iterable<String>? loadPaths, PackageConfig? packageConfig) {
     var sassPath = getEnvironmentVariable('SASS_PATH');
-    if (isBrowser) return [...?importers];
     return [
       ...?importers,
       if (loadPaths != null)
@@ -145,13 +143,6 @@ final class ImportCache {
   /// applicable). Otherwise, returns `null`.
   CanonicalizeResult? canonicalize(Uri url,
       {Importer? baseImporter, Uri? baseUrl, bool forImport = false}) {
-    if (isBrowser &&
-        (baseImporter == null || baseImporter is NoOpImporter) &&
-        _importers.isEmpty) {
-      throw "Custom importers are required to load stylesheets when compiling "
-          "in the browser.";
-    }
-
     if (baseImporter != null && url.scheme == '') {
       var resolvedUrl = baseUrl?.resolveUri(url) ?? url;
       var key = (baseImporter, resolvedUrl, forImport: forImport);

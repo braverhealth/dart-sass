@@ -2,8 +2,6 @@
 // MIT-style license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-import 'package:node_interop/js.dart';
-
 import '../value.dart';
 import 'immutable.dart';
 import 'reflection.dart';
@@ -35,8 +33,7 @@ final JSClass valueClass = () {
   jsClass.defineMethods({
     'sassIndexToListIndex': (Value self, Value sassIndex, [String? name]) =>
         self.sassIndexToListIndex(sassIndex, name),
-    'get': (Value self, num index) =>
-        index < 1 && index >= -1 ? self : undefined,
+    'get': (Value self, num index) => index < 1 && index >= -1 ? self : null,
     'assertBoolean': (Value self, [String? name]) => self.assertBoolean(name),
     'assertCalculation': (Value self, [String? name]) =>
         self.assertCalculation(name),

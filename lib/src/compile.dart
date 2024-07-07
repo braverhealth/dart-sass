@@ -13,7 +13,6 @@ export 'async_compile.dart';
 
 import 'dart:convert';
 
-import 'package:cli_pkg/js.dart';
 import 'package:path/path.dart' as p;
 
 import 'ast/sass.dart';
@@ -135,7 +134,7 @@ CompileResult compileString(String source,
       logger,
       importCache,
       nodeImporter,
-      importer ?? (isBrowser ? NoOpImporter() : FilesystemImporter.cwd),
+      importer ?? FilesystemImporter.cwd,
       functions,
       style,
       useSpaces,

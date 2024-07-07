@@ -2,7 +2,6 @@
 // MIT-style license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-import 'package:cli_pkg/js.dart';
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:package_config/package_config_types.dart';
@@ -12,7 +11,6 @@ import 'ast/sass.dart';
 import 'deprecation.dart';
 import 'importer.dart';
 import 'importer/canonicalize_context.dart';
-import 'importer/no_op.dart';
 import 'importer/utils.dart';
 import 'io.dart';
 import 'logger.dart';
@@ -115,7 +113,6 @@ final class AsyncImportCache {
   static List<AsyncImporter> _toImporters(Iterable<AsyncImporter>? importers,
       Iterable<String>? loadPaths, PackageConfig? packageConfig) {
     var sassPath = getEnvironmentVariable('SASS_PATH');
-    if (isBrowser) return [...?importers];
     return [
       ...?importers,
       if (loadPaths != null)
@@ -146,13 +143,6 @@ final class AsyncImportCache {
       {AsyncImporter? baseImporter,
       Uri? baseUrl,
       bool forImport = false}) async {
-    if (isBrowser &&
-        (baseImporter == null || baseImporter is NoOpImporter) &&
-        _importers.isEmpty) {
-      throw "Custom importers are required to load stylesheets when compiling "
-          "in the browser.";
-    }
-
     if (baseImporter != null && url.scheme == '') {
       var resolvedUrl = baseUrl?.resolveUri(url) ?? url;
       var key = (baseImporter, resolvedUrl, forImport: forImport);
@@ -318,8 +308,7 @@ final class AsyncImportCache {
       // If multiple original URLs canonicalize to the same thing, choose the
       // shortest one.
       minBy<Uri, int>(
-              _canonicalizeCache.values
-                  .whereNotNull()
+              _canonicalizeCache.values.nonNulls
                   .where((result) => result.$2 == canonicalUrl)
                   .map((result) => result.originalUrl),
               (url) => url.path.length)
